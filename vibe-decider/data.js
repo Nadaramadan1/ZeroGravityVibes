@@ -418,6 +418,6 @@ const globalVibes = [
 const MOOD_KEYWORDS = {
     calm: ['tired', 'sleepy', 'chill', 'relax', 'bored', 'calm', 'quiet', 'lazy', 'peace', 'sad', 'down'],
     focused: ['work', 'study', 'focus', 'busy', 'learning', 'code', 'productive', 'deadline', 'thinking'],
-    energetic: ['happy', 'excited', 'gym', 'run', 'active', 'hyper', 'good', 'great', 'awake', 'coffee'],
-    party: ['party', 'dance', 'fun', 'drinking', 'friends', 'music', 'crazy', 'wild', 'celebrate']
+    energetic: ['excited', 'gym', 'run', 'active', 'hyper', 'awake', 'coffee', 'fast'],
+    party: ['happy', 'good', 'great', 'party', 'dance', 'fun', 'drinking', 'friends', 'music', 'crazy', 'wild', 'celebrate']
 };
