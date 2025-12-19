@@ -1,0 +1,27 @@
+# Task: Vibe Decider Web App (Vanilla JS)
+
+- [ ] Project Structure <!-- id: 0 -->
+    - [x] Create project directory (`vibe-decider`) <!-- id: 1 -->
+    - [x] Create `index.html` (skeleton) <!-- id: 2 -->
+    - [x] Create `styles.css` (variables, base styles) <!-- id: 3 -->
+    - [x] Create `app.js` (main entry) <!-- id: 4 -->
+    - [x] Create `data.js` (vibes list) <!-- id: 5 -->
+- [x] Core Logic <!-- id: 6 -->
+    - [x] Implement Vibe Data (titles, emojis, activities, instructions) <!-- id: 7 -->
+    - [x] Logic: Get Random Vibe (no consecutive repeats) <!-- id: 8 -->
+    - [x] Logic: Thinking State (messages + delay) <!-- id: 9 -->
+    - [x] Logic: Easter Eggs (rapid click detection) <!-- id: 10 -->
+- [x] UI Implementation <!-- id: 11 -->
+    - [x] Main Layout (Center content, responsive) <!-- id: 12 -->
+    - [x] Typography (Google Fonts: Outfit/Inter) <!-- id: 13 -->
+    - [x] "Let the Vibe Decide" Button (Hover effects, active state) <!-- id: 14 -->
+    - [x] Thinking UI (Text cycling) <!-- id: 15 -->
+    - [x] Result UI (Card reveal animation, color adaptation) <!-- id: 16 -->
+- [x] Polish & Assets <!-- id: 17 -->
+    - [x] Animation: Fade In/Out <!-- id: 18 -->
+    - [x] Animation: Background Gradient Shift <!-- id: 19 -->
+    - [x] Mobile adjustments <!-- id: 20 -->
+- [x] Verification <!-- id: 21 -->
+    - [x] Manual Test: Click flow <!-- id: 22 -->
+    - [x] Manual Test: Easter eggs <!-- id: 23 -->
+    - [x] Manual Test: Mobile view <!-- id: 24 -->
