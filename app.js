@@ -12,6 +12,15 @@ const historyBuffer = []; // Keep track of last 3 vibes to avoid repetition
 /**
  * Cosmic Visuals Engine
  */
+/**
+ * Cosmic Visuals Engine (Upgrade 2.0)
+ * Features:
+ * - Parallax Starfield (3 Layers)
+ * - Rotating Spiral Galaxies
+ * - Floating Planetoids
+ * - Nebula Fog Overlay
+ * - Mouse Parallax Interaction
+ */
 class CosmicVisuals {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
@@ -22,18 +31,24 @@ class CosmicVisuals {
         this.height = window.innerHeight;
 
         this.particles = [];
-        this.scrollOffset = 0;
-        this.currentTheme = ['#6c5ce7', '#a29bfe']; // Default
+        this.mouse = { x: this.width / 2, y: this.height / 2 };
+        this.currentThemeColors = ['#6c5ce7', '#a29bfe']; // Default
 
         this.init();
+
         window.addEventListener('resize', () => this.resize());
-        window.addEventListener('scroll', () => { this.scrollOffset = window.scrollY * 0.2; });
+        window.addEventListener('mousemove', (e) => {
+            // Smooth mouse tracking for parallax
+            this.mouse.x = e.clientX;
+            this.mouse.y = e.clientY;
+        });
+
         this.animate();
     }
 
     init() {
         this.resize();
-        this.createParticles();
+        this.createUniverse();
     }
 
     resize() {
@@ -41,100 +56,259 @@ class CosmicVisuals {
         this.height = window.innerHeight;
         this.canvas.width = this.width;
         this.canvas.height = this.height;
+        // Re-create heavily positioned elements if needed, or just let them drift
     }
 
     setTheme(colors) {
-        // Smoothly transition theme would be complex, for now we update reference
-        // which particles read on next draw frame
-        this.currentTheme = colors;
+        this.currentThemeColors = colors;
+        // Update galaxy/planet colors immediately
+        this.particles.forEach(p => {
+            if (p.updateTheme) p.updateTheme(colors);
+        });
     }
 
-    createParticles() {
+    createUniverse() {
         this.particles = [];
 
-        // 1. Background Stars (Static-ish)
-        for (let i = 0; i < 150; i++) {
-            this.particles.push({
-                x: Math.random() * this.width,
-                y: Math.random() * this.height,
-                size: Math.random() * 2,
-                baseSize: Math.random() * 2,
-                speed: Math.random() * 0.2,
-                alpha: Math.random(),
-                type: 'star'
-            });
+        // 1. STARFIELD (3 Layers of Depth)
+        // Background Stars (Slow, Small)
+        for (let i = 0; i < 200; i++) this.particles.push(new Star(this.width, this.height, 0.5, 0.05));
+        // Midground Stars (Medium speed)
+        for (let i = 0; i < 100; i++) this.particles.push(new Star(this.width, this.height, 1.2, 0.1));
+        // Foreground Stars (Fast, Brighter)
+        for (let i = 0; i < 50; i++) this.particles.push(new Star(this.width, this.height, 2, 0.2));
+
+        // 2. NEBULAE (Cloud-like Globs)
+        for (let i = 0; i < 5; i++) {
+            this.particles.push(new Nebula(this.width, this.height));
         }
 
-        // 2. Spiral Galaxy Particles (Dynamic)
-        // Center of galaxy
-        const cx = this.width * 0.5;
-        const cy = this.height * 0.5;
-        const arms = 3;
-        const particlesPerArm = 100;
+        // 3. GALAXIES (Spiral Systems)
+        // One main galaxy, maybe one far away
+        this.particles.push(new Galaxy(this.width * 0.2, this.height * 0.3, 80, this.currentThemeColors));
+        this.particles.push(new Galaxy(this.width * 0.8, this.height * 0.8, 120, this.currentThemeColors));
 
-        for (let i = 0; i < arms * particlesPerArm; i++) {
-            const angle = (i * 0.1);
-            const dist = 50 + (i * 0.8); // Spiral out
-
-            this.particles.push({
-                x: 0,
-                y: 0, // Calculated in draw
-                baseAngle: angle,
-                dist: dist,
-                speed: 0.001 + (Math.random() * 0.002), // Slow rotation
-                size: Math.random() * 3,
-                type: 'galaxy',
-                colorType: Math.random() > 0.5 ? 0 : 1 // Which theme color to use
-            });
-        }
+        // 4. PLANETOIDS (Floating Planets)
+        this.particles.push(new Planet(this.width, this.height, 40));
+        this.particles.push(new Planet(this.width, this.height, 25));
     }
 
     draw() {
+        // Clear with slight trail for motion blur feel if desired, but clean clear is better for crispy stars
         this.ctx.clearRect(0, 0, this.width, this.height);
 
-        // Center for galaxy (parallax dependent)
-        const cx = this.width * 0.5;
-        const cy = this.height * 0.5 - (this.scrollOffset * 0.5);
+        // Sort by Z-index (simulated by type logic: Nebula -> Stars -> Galaxy -> Planet)
+        // Actually, painter's algorithm: Draw Background -> Foreground
+
+        // We will just iterate existing array. Order in createUniverse matters.
+        // But galaxies should be behind planets usually.
+        // Let's rely on creation order: Stars, Nebula, Galaxy, Planet.
 
         this.particles.forEach(p => {
-            if (p.type === 'star') {
-                // simple fall/drift
-                p.y -= p.speed;
-                if (p.y < 0) p.y = this.height;
-
-                // Twinkle
-                if (Math.random() > 0.95) p.size = Math.random() * p.baseSize;
-
-                this.ctx.fillStyle = "rgba(255, 255, 255, " + p.alpha + ")";
-                this.ctx.beginPath();
-                this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                this.ctx.fill();
-
-            } else if (p.type === 'galaxy') {
-                // Orbit
-                p.baseAngle += p.speed;
-
-                // Calculate position with slight randomness for "cloud" effect
-                const radius = p.dist + Math.sin(Date.now() * 0.001 + p.dist) * 10;
-                const x = cx + Math.cos(p.baseAngle) * radius;
-                const y = cy + Math.sin(p.baseAngle) * radius;
-
-                // Color based on active theme
-                this.ctx.fillStyle = this.currentTheme[p.colorType];
-
-                // Dynamic Opacity based on distance from center logic or random
-                this.ctx.globalAlpha = 0.6;
-                this.ctx.beginPath();
-                this.ctx.arc(x, y, p.size, 0, Math.PI * 2);
-                this.ctx.fill();
-                this.ctx.globalAlpha = 1;
-            }
+            p.update(this.mouse.x, this.mouse.y);
+            p.draw(this.ctx);
         });
     }
 
     animate() {
         this.draw();
         requestAnimationFrame(() => this.animate());
+    }
+}
+
+/**
+ * ENTITIES
+ */
+
+class Star {
+    constructor(w, h, sizeMax, speedRatio) {
+        this.w = w;
+        this.h = h;
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.size = Math.random() * sizeMax;
+        this.baseSize = this.size;
+        this.speed = speedRatio;
+        this.alpha = Math.random();
+        this.twinkleDir = Math.random() > 0.5 ? 0.02 : -0.02;
+    }
+
+    update(mx, my) {
+        // Natural drift
+        this.y -= this.speed;
+
+        // Mouse Parallax (very subtle)
+        const dx = (mx - this.w / 2) * (this.speed * 0.02);
+        const dy = (my - this.h / 2) * (this.speed * 0.02);
+        this.x += dx * 0.01; // Smooth dampening would be better but simple shift works
+
+        // Wrap
+        if (this.y < 0) {
+            this.y = this.h;
+            this.x = Math.random() * this.w;
+        }
+        if (this.x < 0) this.x = this.w;
+        if (this.x > this.w) this.x = 0;
+
+        // Twinkle
+        this.alpha += this.twinkleDir;
+        if (this.alpha > 1 || this.alpha < 0.2) this.twinkleDir *= -1;
+    }
+
+    draw(ctx) {
+        ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    updateTheme(c) { } // Stars don't care
+}
+
+class Nebula {
+    constructor(w, h) {
+        this.w = w;
+        this.h = h;
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.radius = 100 + Math.random() * 300;
+        this.vx = (Math.random() - 0.5) * 0.2;
+        this.vy = (Math.random() - 0.5) * 0.2;
+        this.color = Math.random() > 0.5 ? 'rgba(60, 20, 100, 0.1)' : 'rgba(20, 60, 100, 0.1)';
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Wrap
+        if (this.x < -this.radius) this.x = this.w + this.radius;
+        if (this.x > this.w + this.radius) this.x = -this.radius;
+        if (this.y < -this.radius) this.y = this.h + this.radius;
+        if (this.y > this.h + this.radius) this.y = -this.radius;
+    }
+
+    draw(ctx) {
+        // Soft gradient blob
+        const g = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.radius);
+        g.addColorStop(0, this.color);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    updateTheme(c) {
+        // Maybe shift nebula color slightly to match theme accent
+        // this.color = hexToRgba(c[0], 0.1); 
+    }
+}
+
+class Galaxy {
+    constructor(x, y, radius, colors) {
+        this.x = x;
+        this.y = y;
+        this.baseRadius = radius;
+        this.colors = colors;
+        this.stars = [];
+        this.angle = 0;
+
+        // Create spiral arms
+        const arms = 3;
+        const count = 150;
+        for (let i = 0; i < count; i++) {
+            const arm = i % arms;
+            const dist = Math.random() * radius;
+            const theta = (dist / 20) + (arm * (Math.PI * 2 / arms)); // Spiral math
+            this.stars.push({
+                dist: dist,
+                baseTheta: theta,
+                size: Math.random() * 2,
+                colorIdx: Math.floor(Math.random() * 2), // 0 or 1
+                offset: Math.random() * 10 // Scatter
+            });
+        }
+    }
+
+    update(mx, my) {
+        this.angle += 0.002; // Slow rotation
+        this.x += Math.sin(this.angle) * 0.1; // Slight drift
+    }
+
+    draw(ctx) {
+        this.stars.forEach(s => {
+            const currentTheta = s.baseTheta + this.angle;
+            const x = this.x + Math.cos(currentTheta) * (s.dist + Math.sin(this.angle) * 5);
+            const y = this.y + Math.sin(currentTheta) * (s.dist + Math.cos(this.angle) * 5);
+
+            ctx.fillStyle = this.colors[s.colorIdx];
+            ctx.globalAlpha = 1 - (s.dist / this.baseRadius) * 0.8; // Fade out at edges
+            ctx.beginPath();
+            ctx.arc(x, y, s.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+        });
+    }
+
+    updateTheme(c) {
+        this.colors = c;
+    }
+}
+
+class Planet {
+    constructor(w, h, r) {
+        this.w = w;
+        this.h = h;
+        this.r = r;
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.colorStr = `hsl(${Math.random() * 360}, 60%, 70%)`;
+        this.angle = 0;
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.angle += 0.01;
+
+        if (this.x < -this.r) this.x = this.w + this.r;
+        if (this.x > this.w + this.r) this.x = -this.r;
+        if (this.y < -this.r) this.y = this.h + this.r;
+        if (this.y > this.h + this.r) this.y = -this.r;
+    }
+
+    draw(ctx) {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle); // Rotate planet? or just shadow
+
+        const g = ctx.createLinearGradient(-this.r, -this.r, this.r, this.r);
+        g.addColorStop(0, this.colorStr);
+        g.addColorStop(1, 'rgba(0,0,0,0.2)'); // Shadow side
+
+        ctx.fillStyle = g;
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = this.colorStr;
+
+        ctx.beginPath();
+        ctx.arc(0, 0, this.r, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ring?
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, this.r * 1.5, this.r * 0.3, Math.PI / 4, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    updateTheme(c) {
+        // Maybe update planet hue based on theme?
     }
 }
 
@@ -162,7 +336,8 @@ const els = {
     modalContent: document.getElementById('modal-content'),
     modalClose: document.getElementById('modal-close'),
     navbar: document.getElementById('navbar'),
-    moodInput: document.getElementById('ai-mood-input')
+    moodInput: document.getElementById('ai-mood-input'),
+    moodInputBtn: document.getElementById('ai-mood-submit')
 };
 
 let lastVibeIndex = -1;
@@ -187,6 +362,16 @@ const init = () => {
     els.favBtn.addEventListener('click', showFavorites);
     els.shareBtn.addEventListener('click', shareVibeAsImage);
     els.modalClose.addEventListener('click', closeModal);
+
+    // New Input Listeners
+    if (els.moodInputBtn) {
+        els.moodInputBtn.addEventListener('click', startProcess);
+    }
+    if (els.moodInput) {
+        els.moodInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') startProcess();
+        });
+    }
 
     // Scroll listener for Navbar
     window.addEventListener('scroll', () => {

@@ -11,7 +11,6 @@
     --font-heading: 'Outfit', sans-serif;
     --font-body: 'Inter', sans-serif;
     --transition-speed: 0.6s;
-    --logo-mix-blend: multiply;
     /* For Light Mode - assumes white background logo or dark text */
 }
 
@@ -22,7 +21,6 @@
     --text-secondary: #bdc3c7;
     --card-bg: rgba(0, 0, 0, 0.6);
     --shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
-    --logo-mix-blend: screen;
     /* For Dark Mode - hides black background of JPG */
 }
 
@@ -166,7 +164,7 @@ body {
     width: 40px;
     height: auto;
     border-radius: 50%;
-    mix-blend-mode: var(--logo-mix-blend);
+    /* mix-blend-mode removed */
     opacity: 0;
     transform: translateY(-10px);
     transition: all 0.3s ease;
@@ -203,7 +201,7 @@ body {
     /* Minimized */
     max-width: 60%;
     height: auto;
-    mix-blend-mode: var(--logo-mix-blend);
+    /* mix-blend-mode removed */
     filter: drop-shadow(0 0 15px rgba(108, 92, 231, 0.3));
     transition: transform 0.3s ease, filter 0.3s ease;
 }
@@ -273,8 +271,8 @@ body {
 
 .mood-input {
     width: 100%;
-    padding: 1rem 1.2rem;
-    /* Removed padding-right for icon */
+    padding: 1rem 3rem 1rem 1.2rem;
+    /* Added padding-right for button */
     background: rgba(255, 255, 255, 0.15);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 20px;
@@ -297,6 +295,32 @@ body {
     border-color: var(--accent);
     box-shadow: 0 0 15px rgba(108, 92, 231, 0.2);
     transform: scale(1.02);
+}
+
+.mood-submit-btn {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    opacity: 0.7;
+}
+
+.mood-submit-btn:hover {
+    color: var(--accent);
+    background: rgba(255, 255, 255, 0.2);
+    opacity: 1;
 }
 
 /* Result Card Levitation */
