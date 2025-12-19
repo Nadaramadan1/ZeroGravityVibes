@@ -3,88 +3,8 @@
 /**
  * Data
  */
-const vibes = [
-    {
-        title: "Mentally fried but alive",
-        emoji: "🫠",
-        activity: "Stare at a wall.",
-        instruction: "For exactly 3 minutes. No thoughts allowed.",
-        colors: ["#fbc2eb", "#a6c1ee"],
-        energy: 1 // Low energy
-    },
-    {
-        title: "Fake productivity mode",
-        emoji: "💻",
-        activity: "Rearrange your desktop icons.",
-        instruction: "Ideally by color. It feels like work but isn't.",
-        colors: ["#e0c3fc", "#8ec5fc"],
-        energy: 4 // Medium-Low
-    },
-    {
-        title: "Soft reset needed",
-        emoji: "🌱",
-        activity: "Touch some grass.",
-        instruction: "Or a houseplant. Just something organic.",
-        colors: ["#d4fc79", "#96e6a1"],
-        energy: 2 // Low
-    },
-    {
-        title: "Main character energy",
-        emoji: "✨",
-        activity: "Walk like you're in a music video.",
-        instruction: "Put on headphones. Ignoring everyone is key.",
-        colors: ["#f6d365", "#fda085"],
-        energy: 9 // High
-    },
-    {
-        title: "Low battery human",
-        emoji: "🪫",
-        activity: "Horizontal life pause.",
-        instruction: "Lie on the floor. The floor is your friend.",
-        colors: ["#84fab0", "#8fd3f4"],
-        energy: 0 // Very Low
-    },
-    {
-        title: "Chaos Gremlin",
-        emoji: "👾",
-        activity: "Close all your tabs.",
-        instruction: "Without saving. Live dangerously.",
-        colors: ["#ff9a9e", "#fecfef"],
-        energy: 8 // High
-    },
-    {
-        title: "Sophisticated Procrastination",
-        emoji: "🧐",
-        activity: "Research expensive hobbies.",
-        instruction: "You definitely need an espresso machine setup.",
-        colors: ["#a1c4fd", "#c2e9fb"],
-        energy: 5 // Medium
-    },
-    {
-        title: "Hydration Threat",
-        emoji: "💧",
-        activity: "Drink water excessively.",
-        instruction: "Aggressively sip until the headache goes away.",
-        colors: ["#cfd9df", "#e2ebf0"],
-        energy: 6 // Medium-High
-    }
-];
-
-const phrases = {
-    thinking: [
-        "Reading your vibe...",
-        "Analying life choices...",
-        "Floating through the void...",
-        "Asking the universal DJ...",
-        "Calculating antigravity...",
-        "Calibrating cosmic energy...",
-        "Drifting..."
-    ],
-    easterEgg: {
-        procrastinating: "You don't trust the universe, huh? 😏",
-        nothing: "Do absolutely nothing today. You earned it. 🏆"
-    }
-};
+// Data is now loaded from data.js
+const historyBuffer = []; // Keep track of last 3 vibes to avoid repetition
 
 /**
  * Particle System
@@ -101,21 +21,9 @@ class CosmicVisuals {
         this.width = window.innerWidth;
         this.height = window.innerHeight;
 
-        this.stars = [];
-        this.planets = [];
-        this.galaxies = [];
+        this.particles = [];
         this.scrollOffset = 0;
-
-        // Configuration
-        this.config = {
-            starCount: 200,
-            planetCount: 3,
-            galaxyCount: 1,
-            colors: {
-                deep: ['#0f0c29', '#302b63', '#24243e'], // Dark mode base
-                light: ['#1e1e2f', '#3b3b58', '#5a5a7f'] // Just slightly lighter 
-            }
-        };
+        this.currentTheme = ['#6c5ce7', '#a29bfe']; // Default
 
         this.init();
         window.addEventListener('resize', () => this.resize());
@@ -125,9 +33,7 @@ class CosmicVisuals {
 
     init() {
         this.resize();
-        this.createStars();
-        this.createPlanets();
-        this.createGalaxies();
+        this.createParticles();
     }
 
     resize() {
@@ -138,134 +44,95 @@ class CosmicVisuals {
     }
 
     setTheme(colors) {
-        // Theme updates can influence planet colors or star brightness
-        // For now, cosmic background stays relatively consistent but adapts brightness
+        // Smoothly transition theme would be complex, for now we update reference
+        // which particles read on next draw frame
+        this.currentTheme = colors;
     }
 
-    createStars() {
-        this.stars = [];
-        for (let i = 0; i < this.config.starCount; i++) {
-            this.stars.push({
+    createParticles() {
+        this.particles = [];
+
+        // 1. Background Stars (Static-ish)
+        for (let i = 0; i < 150; i++) {
+            this.particles.push({
                 x: Math.random() * this.width,
                 y: Math.random() * this.height,
-                size: Math.random() * 1.5 + 0.5,
-                twinkleSpeed: Math.random() * 0.05 + 0.01,
+                size: Math.random() * 2,
+                baseSize: Math.random() * 2,
+                speed: Math.random() * 0.2,
                 alpha: Math.random(),
-                direction: Math.random() > 0.5 ? 1 : -1,
-                speed: Math.random() * 0.2
+                type: 'star'
             });
         }
-    }
 
-    createPlanets() {
-        this.planets = [];
-        const colors = [['#ff9a9e', '#fecfef'], ['#a18cd1', '#fbc2eb'], ['#84fab0', '#8fd3f4']];
+        // 2. Spiral Galaxy Particles (Dynamic)
+        // Center of galaxy
+        const cx = this.width * 0.5;
+        const cy = this.height * 0.5;
+        const arms = 3;
+        const particlesPerArm = 100;
 
-        for (let i = 0; i < this.config.planetCount; i++) {
-            this.planets.push({
-                x: Math.random() * this.width,
-                y: Math.random() * this.height,
-                size: Math.random() * 30 + 10,
-                color: colors[i % colors.length],
-                speedX: (Math.random() - 0.5) * 0.1,
-                speedY: (Math.random() - 0.5) * 0.1,
-                angle: 0
+        for (let i = 0; i < arms * particlesPerArm; i++) {
+            const angle = (i * 0.1);
+            const dist = 50 + (i * 0.8); // Spiral out
+
+            this.particles.push({
+                x: 0,
+                y: 0, // Calculated in draw
+                baseAngle: angle,
+                dist: dist,
+                speed: 0.001 + (Math.random() * 0.002), // Slow rotation
+                size: Math.random() * 3,
+                type: 'galaxy',
+                colorType: Math.random() > 0.5 ? 0 : 1 // Which theme color to use
             });
         }
-    }
-
-    createGalaxies() {
-        this.galaxies = [{
-            x: this.width * 0.8,
-            y: this.height * 0.2,
-            size: 150,
-            arms: 3,
-            angle: 0,
-            color: '#6c5ce7'
-        }];
-    }
-
-    update() {
-        // Stars
-        this.stars.forEach(s => {
-            s.alpha += s.twinkleSpeed * s.direction;
-            if (s.alpha > 1 || s.alpha < 0.2) s.direction *= -1;
-            s.y -= s.speed; // Drift up
-            if (s.y < 0) s.y = this.height;
-        });
-
-        // Planets
-        this.planets.forEach(p => {
-            p.x += p.speedX;
-            p.y += p.speedY;
-            p.angle += 0.002;
-
-            // Wrap around
-            if (p.x < -50) p.x = this.width + 50;
-            if (p.x > this.width + 50) p.x = -50;
-            if (p.y < -50) p.y = this.height + 50;
-            if (p.y > this.height + 50) p.y = -50;
-        });
-
-        // Galaxies
-        this.galaxies.forEach(g => {
-            g.angle += 0.001;
-        });
     }
 
     draw() {
         this.ctx.clearRect(0, 0, this.width, this.height);
 
-        // Stars
-        this.stars.forEach(s => {
-            this.ctx.fillStyle = "white";
-            this.ctx.globalAlpha = s.alpha;
-            this.ctx.beginPath();
-            this.ctx.arc(s.x, s.y - this.scrollOffset * 0.1, s.size, 0, Math.PI * 2);
-            this.ctx.fill();
-        });
+        // Center for galaxy (parallax dependent)
+        const cx = this.width * 0.5;
+        const cy = this.height * 0.5 - (this.scrollOffset * 0.5);
 
-        // Galaxies
-        this.galaxies.forEach(g => {
-            this.ctx.save();
-            this.ctx.translate(g.x, g.y - this.scrollOffset * 0.05);
-            this.ctx.rotate(g.angle);
+        this.particles.forEach(p => {
+            if (p.type === 'star') {
+                // simple fall/drift
+                p.y -= p.speed;
+                if (p.y < 0) p.y = this.height;
 
-            // Simple spiral visualization
-            for (let i = 0; i < 300; i++) {
-                const angle = 0.1 * i;
-                const x = (1 + angle) * Math.cos(angle + g.angle);
-                const y = (1 + angle) * Math.sin(angle + g.angle);
-                this.ctx.fillStyle = g.color;
-                this.ctx.globalAlpha = (300 - i) / 1000;
+                // Twinkle
+                if (Math.random() > 0.95) p.size = Math.random() * p.baseSize;
+
+                this.ctx.fillStyle = "rgba(255, 255, 255, " + p.alpha + ")";
                 this.ctx.beginPath();
-                this.ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+                this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                 this.ctx.fill();
+
+            } else if (p.type === 'galaxy') {
+                // Orbit
+                p.baseAngle += p.speed;
+
+                // Calculate position with slight randomness for "cloud" effect
+                const radius = p.dist + Math.sin(Date.now() * 0.001 + p.dist) * 10;
+                const x = cx + Math.cos(p.baseAngle) * radius;
+                const y = cy + Math.sin(p.baseAngle) * radius;
+
+                // Color based on active theme
+                this.ctx.fillStyle = this.currentTheme[p.colorType];
+
+                // Dynamic Opacity based on distance from center logic or random
+                this.ctx.globalAlpha = 0.6;
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, p.size, 0, Math.PI * 2);
+                this.ctx.fill();
+                this.ctx.globalAlpha = 1;
             }
-            this.ctx.restore();
         });
-
-        // Planets
-        this.planets.forEach(p => {
-            const grad = this.ctx.createLinearGradient(p.x - p.size, p.y - p.size, p.x + p.size, p.y + p.size);
-            grad.addColorStop(0, p.color[0]);
-            grad.addColorStop(1, p.color[1]);
-
-            this.ctx.fillStyle = grad;
-            this.ctx.globalAlpha = 0.8;
-            this.ctx.shadowBlur = 20;
-            this.ctx.shadowColor = p.color[1];
-            this.ctx.beginPath();
-            this.ctx.arc(p.x, p.y - this.scrollOffset * 0.2, p.size, 0, Math.PI * 2);
-            this.ctx.fill();
-            this.ctx.shadowBlur = 0;
-        });
-
-        this.ctx.globalAlpha = 1;
     }
 
     animate() {
-        this.update();
         this.draw();
         requestAnimationFrame(() => this.animate());
     }
@@ -294,7 +161,8 @@ const els = {
     modal: document.getElementById('modal-overlay'),
     modalContent: document.getElementById('modal-content'),
     modalClose: document.getElementById('modal-close'),
-    navbar: document.getElementById('navbar')
+    navbar: document.getElementById('navbar'),
+    moodInput: document.getElementById('ai-mood-input')
 };
 
 let lastVibeIndex = -1;
@@ -350,7 +218,13 @@ const toggleTheme = () => {
     }
 };
 
-const applyColors = (colors) => {
+const applyColors = (colorsOrTheme) => {
+    let colors = colorsOrTheme;
+    // If it's a theme string, look it up
+    if (typeof colorsOrTheme === 'string') {
+        colors = COSMIC_THEMES[colorsOrTheme] || COSMIC_THEMES['MilkyWay'];
+    }
+
     if (!isDark) {
         document.documentElement.style.setProperty('--bg-color-1', colors[0]);
         document.documentElement.style.setProperty('--bg-color-2', colors[1]);
@@ -358,17 +232,91 @@ const applyColors = (colors) => {
     }
 };
 
-const getWeightedVibe = () => {
-    const sliderVal = els.moodSlider ? parseInt(els.moodSlider.value) : 50;
-    let candidates = vibes;
-    if (sliderVal < 40) {
-        candidates = vibes.filter(v => v.energy <= 4);
-    } else if (sliderVal > 60) {
-        candidates = vibes.filter(v => v.energy >= 6);
+const getTimeOfDay = () => {
+    const hour = new Date().getHours();
+    if (hour >= 5 && hour < 10) return 'morning';
+    if (hour >= 10 && hour < 17) return 'work';
+    if (hour >= 17 && hour < 21) return 'evening';
+    return 'night';
+};
+
+const detectMood = (text) => {
+    if (!text) return null;
+    text = text.toLowerCase();
+
+    // Check against keywords in MOOD_KEYWORDS (from data.js)
+    for (const [vibe, keywords] of Object.entries(MOOD_KEYWORDS)) {
+        if (keywords.some(k => text.includes(k))) {
+            return vibe;
+        }
     }
-    if (candidates.length === 0) candidates = vibes;
-    const randomIndex = Math.floor(Math.random() * candidates.length);
-    return candidates[randomIndex];
+    return null;
+};
+
+const getSmartVibe = () => {
+    const time = getTimeOfDay();
+
+    // 1. Detect Mood from Input OR Slider
+    let targetVibe = null;
+    const inputText = els.moodInput ? els.moodInput.value.trim() : '';
+
+    // Try AI detection first
+    if (inputText) {
+        targetVibe = detectMood(inputText);
+        console.log(`AI Detection: "${inputText}" -> ${targetVibe}`);
+    }
+
+    // Fallback to Slider if no AI match
+    if (!targetVibe) {
+        const sliderVal = els.moodSlider ? parseInt(els.moodSlider.value) : 50;
+        if (sliderVal < 25) targetVibe = 'calm';
+        else if (sliderVal < 50) targetVibe = 'focused';
+        else if (sliderVal < 75) targetVibe = 'energetic';
+        else targetVibe = 'party';
+        console.log(`Slider Detection: ${sliderVal} -> ${targetVibe}`);
+    }
+
+    // 2. Filter Cards from globalVibes
+    let candidates = globalVibes.filter(v => {
+        // Time filter
+        const timeMatch = v.time.includes(time) || v.time.includes('any');
+        // Vibe filter (using new 'vibe' property)
+        const moodMatch = v.vibe === targetVibe;
+        // History filter
+        const notRecentlyShown = !historyBuffer.includes(v.title);
+
+        return timeMatch && moodMatch && notRecentlyShown;
+    });
+
+    // Fallback 1: Relax history
+    if (candidates.length === 0) {
+        candidates = globalVibes.filter(v =>
+            (v.time.includes(time) || v.time.includes('any')) &&
+            v.vibe === targetVibe
+        );
+    }
+
+    // Fallback 2: Relax time (keep mood)
+    if (candidates.length === 0) {
+        candidates = globalVibes.filter(v => v.vibe === targetVibe);
+    }
+
+    // Fallback 3: Relax mood (keep time)
+    if (candidates.length === 0) {
+        candidates = globalVibes.filter(v => v.time.includes(time) || v.time.includes('any'));
+    }
+
+    // Pick random
+    const vibe = candidates[Math.floor(Math.random() * candidates.length)];
+
+    // Update history
+    if (vibe) {
+        historyBuffer.push(vibe.title);
+        if (historyBuffer.length > 5) historyBuffer.shift();
+        console.log(`Smart Logic Selected: ${vibe.title} (Time: ${time}, Mood: ${targetVibe})`);
+    }
+
+    return vibe || globalVibes[0];
 };
 
 const startProcess = () => {
@@ -384,11 +332,10 @@ const startProcess = () => {
 
     // UI Updates
     els.btn.classList.add('hidden');
-    // Hide title logic - class based
     if (document.querySelector('.hero-logo-container')) document.querySelector('.hero-logo-container').classList.add('hidden');
     if (document.querySelector('.subheading')) document.querySelector('.subheading').classList.add('hidden');
-
     if (document.querySelector('.slider-container')) document.querySelector('.slider-container').classList.add('hidden');
+    if (document.querySelector('.mood-input-wrapper')) document.querySelector('.mood-input-wrapper').classList.add('hidden');
     els.thinking.classList.remove('hidden');
     els.result.classList.add('hidden');
 
@@ -404,23 +351,30 @@ const cycleThinkingMessages = () => {
         steps++;
         if (steps >= maxSteps) {
             clearInterval(interval);
-            setTimeout(showResult, 600);
+            setTimeout(() => showResult(), 600);
         }
     }, 500);
 };
 
 const showResult = (overrideVibe = null) => {
-    const vibe = overrideVibe || getWeightedVibe();
+    const vibe = overrideVibe || getSmartVibe();
 
     els.vibeEmoji.textContent = vibe.emoji;
     els.vibeTitle.textContent = vibe.title;
     els.vibeActivity.textContent = vibe.activity;
-    els.vibeInstruction.textContent = vibe.instruction;
+
+    // New: Show Quote AND Instruction
+    // Styling the quote as main text, instruction as subtitle
+    els.vibeInstruction.innerHTML = `
+        <span style="font-size: 1.1em; font-weight: 600; font-style: italic;">"${vibe.quote}"</span><br/>
+        <span style="font-size: 0.9em; opacity: 0.8; margin-top: 5px; display: block;">${vibe.instruction}</span>
+    `;
 
     const isFav = favorites.some(f => f.title === vibe.title);
     els.acceptBtn.textContent = isFav ? "Saved to Favorites ❤️" : "Save to Favorites 🤍";
 
-    applyColors(vibe.colors);
+    // Use cosmic theme
+    applyColors(vibe.theme);
 
     els.thinking.classList.add('hidden');
     els.result.classList.remove('hidden');
@@ -433,7 +387,11 @@ const showEasterEgg = () => {
     els.result.classList.remove('hidden');
     els.vibeEmoji.textContent = "😏";
     els.vibeTitle.textContent = "Trust Issues?";
-    els.vibeActivity.textContent = phrases.easterEgg.procrastinating;
+
+    // Use random easter egg phrase from global array
+    const eggPhrase = phrases.easterEgg[Math.floor(Math.random() * phrases.easterEgg.length)];
+
+    els.vibeActivity.textContent = eggPhrase;
     els.vibeInstruction.textContent = "The universe is judging your speed.";
 };
 
@@ -443,11 +401,11 @@ const addToFavorites = () => {
 
     if (isFav) return;
 
-    const vibe = vibes.find(v => v.title === currentVibeTitle) || {
+    const vibe = globalVibes.find(v => v.title === currentVibeTitle) || {
         title: currentVibeTitle,
         emoji: els.vibeEmoji.textContent,
         activity: els.vibeActivity.textContent,
-        colors: ["#fff"]
+        theme: "MilkyWay"
     };
 
     favorites.push(vibe);
@@ -558,7 +516,12 @@ const generateVibeImage = async () => {
     const title = els.vibeTitle.textContent;
     const emoji = els.vibeEmoji.textContent;
     const activity = els.vibeActivity.textContent;
-    const instruction = els.vibeInstruction.textContent;
+
+    // Extract Quote and Instruction
+    const spans = els.vibeInstruction.querySelectorAll('span');
+    // If we have our new structure, use it. Otherwise fallback to text.
+    const quote = spans.length > 0 ? spans[0].textContent.replace(/^"|"$/g, '') : "";
+    const instruction = spans.length > 1 ? spans[1].textContent : els.vibeInstruction.textContent;
 
     // Get current gradient colors
     const color1 = getComputedStyle(document.documentElement).getPropertyValue('--bg-color-1').trim();
@@ -594,9 +557,14 @@ const generateVibeImage = async () => {
             <p style="font-size: 36px; margin: 0 0 25px 0; opacity: 0.95; max-width: 800px; line-height: 1.4;">
                 ${activity}
             </p>
-            <p style="font-size: 28px; opacity: 0.7; font-style: italic; margin: 0 0 60px 0; max-width: 700px; line-height: 1.3;">
-                ${instruction}
-            </p>
+            
+            <div style="margin: 0 0 50px 0; max-width: 700px;">
+                ${quote ? `<p style="font-size: 32px; font-weight: 600; font-style: italic; margin: 0 0 15px 0; line-height: 1.3;">"${quote}"</p>` : ''}
+                <p style="font-size: 24px; opacity: 0.7; margin: 0;">
+                    ${instruction}
+                </p>
+            </div>
+
             <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 40px;">
                 <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, rgba(108, 92, 231, 0.3), rgba(162, 155, 254, 0.3)); display: flex; align-items: center; justify-content: center; font-size: 32px; backdrop-filter: blur(10px);">✨</div>
                 <p style="font-size: 32px; font-weight: 600; opacity: 0.8; margin: 0;">ZeroGravity</p>
@@ -770,8 +738,11 @@ const resetApp = () => {
     if (document.querySelector('.hero-logo-container')) document.querySelector('.hero-logo-container').classList.remove('hidden');
     if (document.querySelector('.subheading')) document.querySelector('.subheading').classList.remove('hidden');
     if (document.querySelector('.slider-container')) document.querySelector('.slider-container').classList.remove('hidden');
+    if (document.querySelector('.mood-input-wrapper')) document.querySelector('.mood-input-wrapper').classList.remove('hidden');
     els.thinkingText.textContent = "Analyzing mental chaos...";
     els.acceptBtn.textContent = "Save to Favorites 🤍";
+    // Clear input
+    if (els.moodInput) els.moodInput.value = "";
 };
 
 if (document.readyState === 'loading') {
