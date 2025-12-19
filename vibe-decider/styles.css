@@ -284,6 +284,7 @@ body {
 
 .mood-slider {
     -webkit-appearance: none;
+    appearance: none;
     width: 150px;
     height: 6px;
     background: rgba(0, 0, 0, 0.1);
@@ -600,6 +601,68 @@ body {
 
 .shake {
     animation: shake 0.3s ease-in-out;
+}
+
+/* Share System Styles */
+.share-generating {
+    opacity: 0.6;
+    pointer-events: none;
+    position: relative;
+}
+
+.share-generating::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px;
+    height: 20px;
+    border: 2px solid transparent;
+    border-top-color: var(--text-secondary);
+    border-radius: 50%;
+    animation: shareLoading 0.8s linear infinite;
+}
+
+.share-notification {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    padding: 1rem 2rem;
+    border-radius: 50px;
+    box-shadow: var(--shadow);
+    z-index: 2000;
+    animation: slideUpFade 0.3s ease-out;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+
+@keyframes shareLoading {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    100% {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
 }
 
 .celebrate {

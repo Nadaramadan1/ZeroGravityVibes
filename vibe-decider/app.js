@@ -317,7 +317,7 @@ const init = () => {
     els.themeToggle.addEventListener('click', toggleTheme);
     els.quizBtn.addEventListener('click', startQuiz);
     els.favBtn.addEventListener('click', showFavorites);
-    els.shareBtn.addEventListener('click', showShareModal);
+    els.shareBtn.addEventListener('click', shareVibeAsImage);
     els.modalClose.addEventListener('click', closeModal);
 
     // Scroll listener for Navbar
@@ -550,6 +550,172 @@ const startQuiz = () => {
     renderQ();
 };
 
+/**
+ * Generate a shareable image from the current vibe card
+ * Returns a Blob containing the PNG image
+ */
+const generateVibeImage = async () => {
+    const title = els.vibeTitle.textContent;
+    const emoji = els.vibeEmoji.textContent;
+    const activity = els.vibeActivity.textContent;
+    const instruction = els.vibeInstruction.textContent;
+
+    // Get current gradient colors
+    const color1 = getComputedStyle(document.documentElement).getPropertyValue('--bg-color-1').trim();
+    const color2 = getComputedStyle(document.documentElement).getPropertyValue('--bg-color-2').trim();
+
+    // Create temporary container for image generation
+    const container = document.createElement('div');
+    container.style.cssText = `
+        position: fixed;
+        top: -9999px;
+        left: -9999px;
+        width: 1080px;
+        height: 1080px;
+        background: linear-gradient(135deg, ${color1}, ${color2});
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 80px;
+        box-sizing: border-box;
+        font-family: 'Outfit', 'Inter', sans-serif;
+        color: ${getComputedStyle(document.documentElement).getPropertyValue('--text-main')};
+    `;
+
+    container.innerHTML = `
+        <div style="text-align: center; position: relative; z-index: 2;">
+            <div style="font-size: 180px; margin-bottom: 40px; filter: drop-shadow(0 10px 30px rgba(0,0,0,0.3));">
+                ${emoji}
+            </div>
+            <h2 style="font-size: 56px; font-weight: 700; margin: 0 0 30px 0; line-height: 1.2; max-width: 800px;">
+                ${title}
+            </h2>
+            <p style="font-size: 36px; margin: 0 0 25px 0; opacity: 0.95; max-width: 800px; line-height: 1.4;">
+                ${activity}
+            </p>
+            <p style="font-size: 28px; opacity: 0.7; font-style: italic; margin: 0 0 60px 0; max-width: 700px; line-height: 1.3;">
+                ${instruction}
+            </p>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 20px; margin-top: 40px;">
+                <div style="width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, rgba(108, 92, 231, 0.3), rgba(162, 155, 254, 0.3)); display: flex; align-items: center; justify-content: center; font-size: 32px; backdrop-filter: blur(10px);">✨</div>
+                <p style="font-size: 32px; font-weight: 600; opacity: 0.8; margin: 0;">ZeroGravity</p>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(container);
+
+    try {
+        // Generate canvas from HTML
+        const canvas = await html2canvas(container, {
+            backgroundColor: null,
+            scale: 2, // High quality
+            logging: false,
+            useCORS: false, // Changed to false since we're not using external images
+            allowTaint: false // Changed to false - no taint issues now
+        });
+
+        // Convert canvas to blob
+        return new Promise((resolve, reject) => {
+            canvas.toBlob((blob) => {
+                document.body.removeChild(container);
+                if (blob) {
+                    resolve(blob);
+                } else {
+                    reject(new Error('Failed to generate image'));
+                }
+            }, 'image/png', 0.95);
+        });
+    } catch (error) {
+        document.body.removeChild(container);
+        throw error;
+    }
+};
+
+/**
+ * Show notification to user
+ */
+const showNotification = (message) => {
+    const notification = document.createElement('div');
+    notification.className = 'share-notification';
+    notification.innerHTML = `<span>${message}</span>`;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(-50%) translateY(20px)';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+};
+
+/**
+ * Share vibe as image - main function
+ */
+const shareVibeAsImage = async () => {
+    const title = els.vibeTitle.textContent;
+    const emoji = els.vibeEmoji.textContent;
+    const activity = els.vibeActivity.textContent;
+
+    // Show loading state
+    els.shareBtn.classList.add('share-generating');
+    els.shareBtn.textContent = 'Generating...';
+
+    try {
+        // Generate the image
+        const imageBlob = await generateVibeImage();
+
+        // Prepare share data
+        const shareText = `${emoji} ${title}\n${activity}\n\nDiscover your vibe on ZeroGravity ✨`;
+        const shareUrl = window.location.href;
+
+        // Try Web Share API (mobile/modern browsers)
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [new File([imageBlob], 'vibe.png', { type: 'image/png' })] })) {
+            const file = new File([imageBlob], 'my-zerogravity-vibe.png', { type: 'image/png' });
+
+            try {
+                await navigator.share({
+                    title: 'My ZeroGravity Vibe',
+                    text: shareText,
+                    files: [file]
+                });
+
+                // Success - reset button
+                els.shareBtn.classList.remove('share-generating');
+                els.shareBtn.textContent = 'Share 📤';
+                return;
+            } catch (shareError) {
+                // User cancelled or sharing failed, fall through to download
+                if (shareError.name !== 'AbortError') {
+                    console.log('Share failed, falling back to download');
+                }
+            }
+        }
+
+        // Fallback: Download the image
+        const url = URL.createObjectURL(imageBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `zerogravity-vibe-${Date.now()}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        // Show notification
+        showNotification('Image saved — share it anywhere ✨');
+
+    } catch (error) {
+        console.error('Share error:', error);
+        showNotification('❌ Oops! Failed to generate image. Try again.');
+    } finally {
+        // Reset button state
+        els.shareBtn.classList.remove('share-generating');
+        els.shareBtn.textContent = 'Share 📤';
+    }
+};
+
+// Keep old modal function for fallback or as alternative method
 const showShareModal = () => {
     const title = els.vibeTitle.textContent;
     const emoji = els.vibeEmoji.textContent;
